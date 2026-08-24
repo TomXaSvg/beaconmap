@@ -6,6 +6,22 @@ import { esc, hasCoords } from './util.js';
 import { estimateDistance } from './ibeacon.js';
 
 /* global L */
+
+// 距離→サーモ色（C案：遠い=緑 → 近い=赤）。40mを基準に 0(遠)〜1(近) を補間。
+// 返り値の t は近さ(0〜1)。塗り濃度・線の太さにも使う（近いほど濃く太く）。
+const HEAT_STOPS = [[0,[53,201,138]], [0.45,[245,197,24]], [0.75,[255,122,26]], [1,[255,45,45]]];
+function heatColor(dist){
+  const t = Math.max(0, Math.min(1, (40 - dist) / 40));
+  for(let i = 1; i < HEAT_STOPS.length; i++){
+    if(t <= HEAT_STOPS[i][0]){
+      const a = HEAT_STOPS[i-1], b = HEAT_STOPS[i], lt = (t - a[0]) / (b[0] - a[0]);
+      const c = a[1].map((v, j) => Math.round(v + (b[1][j] - v) * lt));
+      return { color: `rgb(${c[0]},${c[1]},${c[2]})`, t };
+    }
+  }
+  return { color: 'rgb(255,45,45)', t: 1 };
+}
+
 export const mapview = (() => {
   let map = null, layer = null, meLayer = null, pickHandler = null, lastFix = null, watchId = null;
 
@@ -128,9 +144,10 @@ export const mapview = (() => {
         const det = detByKey.get(b.key);
         if(!det) return;                 // 受信中のみ
         const dist = estimateDistance(det.rssi, det.txPower);
+        const h = heatColor(dist); // 遠い=緑→近い=赤。近いほど濃く・太く
         const c = L.circle([lastFix.lat, lastFix.lng], {
-          radius: dist, color: COLOR.warn, weight: 1.5, dashArray: '5,5',
-          fillColor: COLOR.warn, fillOpacity: 0.06
+          radius: dist, color: h.color, weight: 1.5 + h.t * 2.5, dashArray: '5,5',
+          fillColor: h.color, fillOpacity: 0.10 + h.t * 0.22
         }).bindPopup(`<b>${esc(b.name)}</b><br>現在地から約 ${esc(dist.toFixed(1))} m の円内`).addTo(layer);
         // 円の上端に名称ラベル（方向は不明なので位置は便宜上・上端に固定）
         const topLat = c.getBounds().getNorth();
