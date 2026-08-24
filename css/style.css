@@ -33,8 +33,16 @@ header h1{font-size:15px; margin:0; margin-right:auto; font-weight:700}
 .badge.bad{color:#2a0d0d; background:var(--bad); border-color:var(--bad)}
 
 /* ===== 地図 ===== */
-#mapWrap{position:relative; height:42dvh; min-height:220px; flex:0 0 auto}
+#mapWrap{position:relative; height:42dvh; flex:0 0 auto}
 #map{width:100%; height:100%; background:#0c0e13}
+/* 地図の高さ調整バー（ドラッグで地図とタブ領域の境目を上下）*/
+#mapResizer{
+  flex:0 0 auto; height:16px; background:var(--panel);
+  border-bottom:1px solid var(--line); display:flex; align-items:center; justify-content:center;
+  cursor:ns-resize; touch-action:none; user-select:none;
+}
+#mapResizer::before{ content:''; width:44px; height:4px; border-radius:2px; background:var(--line) }
+#mapResizer:hover::before, #mapResizer.dragging::before{ background:var(--accent) }
 /* 推定現在地パネル（地図上にオーバーレイ）*/
 #hint{
   position:absolute; left:8px; bottom:8px; z-index:500; display:none;
