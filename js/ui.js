@@ -9,7 +9,7 @@ import { estimateDistance } from './ibeacon.js';
 
 export const ui = (() => {
   function showTab(name){
-    for(const t of ['Scan','Radar','Reg']){
+    for(const t of ['Scan','Radar','Reg','Diag']){
       const on = name === t.toLowerCase();
       $('tab'+t).classList.toggle('active', on);
       $('pane'+t).classList.toggle('active', on);

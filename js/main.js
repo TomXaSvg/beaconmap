@@ -158,6 +158,7 @@ function bind(){
   $('tabScan').addEventListener('click', () => ui.showTab('scan'));
   $('tabRadar').addEventListener('click', () => ui.showTab('radar'));
   $('tabReg').addEventListener('click', () => ui.showTab('reg'));
+  $('tabDiag').addEventListener('click', () => ui.showTab('diag'));
 
   // スキャン操作（start はユーザー操作のコールスタック内で呼ぶ）
   const onScanClick = () => {
