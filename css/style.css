@@ -123,3 +123,12 @@ h2.sec{font-size:13px; color:var(--muted); margin:18px 0 8px; font-weight:600}
 @keyframes sweep{to{transform:rotate(360deg)}}
 #radarSvg{position:absolute; inset:0; width:100%; height:100%; display:block}
 .radar-note{text-align:center; color:var(--muted); font-size:12px; margin:-4px 0 10px}
+
+/* 地図の「現在地」ボタン（Leafletコントロール） */
+.locate-btn{
+  background:var(--panel); color:var(--text); border:1px solid var(--line);
+  border-radius:8px; padding:7px 11px; font:inherit; font-size:12px; font-weight:700;
+  cursor:pointer; box-shadow:0 1px 5px rgba(0,0,0,.45);
+}
+.locate-btn:hover{border-color:var(--accent)}
+.locate-btn:disabled{opacity:.5; cursor:progress}

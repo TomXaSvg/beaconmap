@@ -7,7 +7,7 @@ import { estimateDistance } from './ibeacon.js';
 
 /* global L */
 export const mapview = (() => {
-  let map = null, layer = null, pickHandler = null;
+  let map = null, layer = null, meLayer = null, pickHandler = null, lastFix = null;
 
   function init(elId){
     map = L.map(elId, { zoomControl:true }).setView(MAP_CENTER, MAP_ZOOM);
@@ -16,6 +16,60 @@ export const mapview = (() => {
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
     layer = L.layerGroup().addTo(map);
+    meLayer = L.layerGroup().addTo(map); // 現在地は redraw で消えない専用レイヤ
+    addLocateControl();
+  }
+
+  // 端末の現在地(GPS)を青ドット＋精度円で表示。ビーコン用 layer とは別レイヤ
+  function showMyLocation(lat, lng, acc, recenter){
+    meLayer.clearLayers();
+    if(Number.isFinite(acc) && acc > 0){
+      L.circle([lat, lng], {
+        radius: acc, color: COLOR.me, weight: 1, fillColor: COLOR.me, fillOpacity: 0.12
+      }).addTo(meLayer);
+    }
+    L.circleMarker([lat, lng], {
+      radius: 7, color: '#ffffff', weight: 2, fillColor: COLOR.me, fillOpacity: 1
+    }).bindPopup('現在地（GPS）').addTo(meLayer);
+    lastFix = { lat, lng };
+    if(recenter) map.setView([lat, lng], Math.max(map.getZoom(), 17));
+  }
+
+  // 現在地を取得して表示。成功で {lat,lng}、失敗で null（呼び出し側でメッセージ）
+  function locate(recenter){
+    return new Promise((resolve) => {
+      if(!navigator.geolocation){ resolve(null); return; }
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          showMyLocation(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy, recenter);
+          resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        },
+        () => resolve(null),
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
+      );
+    });
+  }
+
+  // 地図右上に「現在地」ボタン（カーナビの現在地ボタン相当。押すたび読み直し）
+  function addLocateControl(){
+    const Ctrl = L.Control.extend({
+      options: { position: 'topright' },
+      onAdd(){
+        const btn = L.DomUtil.create('button', 'locate-btn');
+        btn.type = 'button';
+        btn.title = '現在地に移動';
+        btn.textContent = '◎ 現在地';
+        L.DomEvent.disableClickPropagation(btn);
+        L.DomEvent.on(btn, 'click', async () => {
+          btn.disabled = true;
+          const fix = await locate(true);
+          btn.disabled = false;
+          if(!fix) alert('現在地を取得できませんでした。\n・位置情報サービスがON\n・Chromeアプリに「位置情報」権限が許可されているか\nを確認してください。');
+        });
+        return btn;
+      }
+    });
+    map.addControl(new Ctrl());
   }
 
   function redraw(beacons, dets, best){
@@ -76,5 +130,5 @@ export const mapview = (() => {
     map.on('click', pickHandler);
   }
 
-  return { init, redraw, fitAll, focus, onPick };
+  return { init, redraw, fitAll, focus, onPick, locate, showMyLocation };
 })();

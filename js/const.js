@@ -14,4 +14,5 @@ export const RADAR_MAX_M       = 30;     // レーダーの外周が表す距離
 export const RADAR_RINGS       = 3;      // 同心円の本数
 
 // Leaflet はSVG属性へ直接色を書くため CSS変数が効かない。トークンと同値のhexを持つ
-export const COLOR = { ok:'#35c98a', accent:'#3ea6ff', warn:'#f5a524', bad:'#ff5c5c', idle:'#4a5160' };
+// me = 端末の現在地(GPS)。ビーコンの「推定現在地」(accent) と区別するため別の青
+export const COLOR = { ok:'#35c98a', accent:'#3ea6ff', warn:'#f5a524', bad:'#ff5c5c', idle:'#4a5160', me:'#1a73e8' };

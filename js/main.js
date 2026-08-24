@@ -195,6 +195,10 @@ async function boot(){
   refreshLists();
   mapview.fitAll(store.all());
   setInterval(tick, RENDER_TICK_MS);
+
+  // カーナビ風：起動時に端末の現在地へ寄せる。取得はプロンプト待ちで初期化を
+  // ブロックしないよう非同期のまま（許可待ちが長くても描画ループは動く）
+  mapview.locate(true);
 }
 
 boot();
