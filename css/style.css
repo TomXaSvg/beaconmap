@@ -132,3 +132,11 @@ h2.sec{font-size:13px; color:var(--muted); margin:18px 0 8px; font-weight:600}
 }
 .locate-btn:hover{border-color:var(--accent)}
 .locate-btn:disabled{opacity:.5; cursor:progress}
+
+/* 地図上のビーコン名ラベル（常時表示ツールチップ） */
+.leaflet-tooltip.beacon-label{
+  background:rgba(26,31,42,.92); color:#e7ecf3; border:1px solid var(--line);
+  border-radius:6px; padding:1px 7px; font-size:11px; font-weight:700;
+  box-shadow:0 1px 3px rgba(0,0,0,.45);
+}
+.leaflet-tooltip.beacon-label::before{border:none} /* 吹き出しの三角を消す */
