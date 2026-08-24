@@ -243,8 +243,45 @@ function bind(){
     e.target.value = '';
   });
 
+  setupMapResizer();
+
   // 画面離脱時はスキャンを止める（設計 6-4）
   window.addEventListener('pagehide', () => { if(currentSource) currentSource.stop(); });
+}
+
+// 地図の高さをドラッグで可変に。最小＝既定(42dvh)の1/3(=14dvh)、最大＝既定(42dvh)
+function setupMapResizer(){
+  const resizer = $('mapResizer'), mapWrap = $('mapWrap');
+  if(!resizer || !mapWrap) return;
+  let startY = 0, startH = 0, dragging = false;
+  const vh = (p) => window.innerHeight * p / 100;
+
+  const onMove = (e) => {
+    if(!dragging) return;
+    const y = e.touches ? e.touches[0].clientY : e.clientY;
+    let h = startH + (y - startY);              // 下ドラッグで拡大／上ドラッグで縮小
+    h = Math.max(vh(14), Math.min(vh(42), h));  // 1/3〜既定の範囲にクランプ
+    mapWrap.style.height = h + 'px';
+    mapview.invalidateSize();
+  };
+  const onUp = (e) => {
+    if(!dragging) return;
+    dragging = false;
+    resizer.classList.remove('dragging');
+    try{ resizer.releasePointerCapture(e.pointerId); }catch(_){}
+    mapview.invalidateSize();
+  };
+  resizer.addEventListener('pointerdown', (e) => {
+    dragging = true;
+    startY = e.clientY;
+    startH = mapWrap.offsetHeight;
+    resizer.classList.add('dragging');
+    try{ resizer.setPointerCapture(e.pointerId); }catch(_){}
+    e.preventDefault();
+  });
+  resizer.addEventListener('pointermove', onMove);
+  resizer.addEventListener('pointerup', onUp);
+  resizer.addEventListener('pointercancel', onUp);
 }
 
 /* --- 初期化 --- */

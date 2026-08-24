@@ -174,6 +174,7 @@ export const mapview = (() => {
     map.fitBounds(bounds.pad(0.3));
   }
   function focus(beacon){ map.setView([beacon.lat, beacon.lng], 19); }
+  function invalidateSize(){ if(map) map.invalidateSize(); } // コンテナ高さ変更をLeafletに反映
 
   // 座標指定モード。1回クリックで自動解除する
   function onPick(cb){
@@ -185,5 +186,5 @@ export const mapview = (() => {
     map.on('click', pickHandler);
   }
 
-  return { init, redraw, fitAll, focus, onPick, locate, showMyLocation, startWatch, stopWatch };
+  return { init, redraw, fitAll, focus, onPick, locate, showMyLocation, startWatch, stopWatch, invalidateSize };
 })();
