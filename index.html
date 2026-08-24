@@ -32,6 +32,7 @@
   <button id="tabScan" class="active">スキャン</button>
   <button id="tabRadar">レーダー</button>
   <button id="tabReg">ビーコン登録</button>
+  <button id="tabDiag">診断</button>
 </nav>
 
 <main>
@@ -44,19 +45,6 @@
       <button id="btnFit" class="btn ghost">全体表示</button>
     </div>
     <div id="detList" class="list"></div>
-
-    <h2 class="sec">診断（うまく受信できない時）</h2>
-    <div class="row">
-      <button id="btnDiag" class="btn ghost">診断スキャン開始（生データ表示）</button>
-    </div>
-    <div class="field" style="margin-bottom:8px">
-      <label for="diagFilter">絞り込み（UUID・会社ID・名称の一部。ハイフン/スペース無視）</label>
-      <input id="diagFilter" type="text" placeholder="例：48534442" value="48534442" autocomplete="off">
-    </div>
-    <div class="radar-note" style="text-align:left; margin:-2px 0 8px">
-      ※ 形式を問わず受信したBLE機器を表示。空欄にすると全件表示。テスト機のUUID（48534442…）が出るか確認用。
-    </div>
-    <pre id="diagLog" style="display:none"></pre>
   </section>
 
   <!-- ===== レーダーpane ===== 座標不要。登録ビーコンを距離で探す -->
@@ -126,6 +114,21 @@
 
     <h2 class="sec">登録済みビーコン</h2>
     <div id="regList" class="list"></div>
+  </section>
+
+  <!-- ===== 診断pane ===== 受信できない時の生データ確認 -->
+  <section id="paneDiag" class="pane">
+    <div class="row">
+      <button id="btnDiag" class="btn ghost">診断スキャン開始（生データ表示）</button>
+    </div>
+    <div class="field" style="margin-bottom:8px">
+      <label for="diagFilter">絞り込み（UUID・会社ID・名称の一部。ハイフン/スペース無視）</label>
+      <input id="diagFilter" type="text" placeholder="例：48534442" value="48534442" autocomplete="off">
+    </div>
+    <div class="radar-note" style="text-align:left; margin:-2px 0 8px">
+      ※ 形式を問わず受信したBLE機器を表示。空欄にすると全件表示。テスト機のUUID（48534442…）が出るか確認用。
+    </div>
+    <pre id="diagLog" style="display:none"></pre>
   </section>
 </main>
 
