@@ -10,6 +10,7 @@ import { ui } from './ui.js';
 import { env } from './env.js';
 import { getRealSource, MockSource } from './sources/index.js';
 import { csvToBeacons, decodeText } from './csv.js';
+import { parseIBeacon } from './ibeacon.js';
 
 let currentSource = null; // 実機とデモは排他。同時稼働させない
 
@@ -81,6 +82,64 @@ function stopScan(){
   tick();
 }
 
+/* ---- 診断スキャン：形式を問わず受信した全BLE機器を生表示 ---- */
+let diagScan = null, diagListener = null;
+const diagSeen = new Map();
+
+function renderDiag(){
+  const el = $('diagLog');
+  el.style.display = 'block';
+  const rows = [...diagSeen.values()].sort((a, b) => b.rssi - a.rssi);
+  if(!rows.length){ el.textContent = '(まだ受信なし… ビーコンを近づけてください)'; return; }
+  el.textContent = `受信 ${rows.length} 台\n--------\n` + rows.map(r => {
+    let s = `${r.name}  RSSI ${r.rssi}dBm`;
+    if(r.mfg.length) s += `\n  会社ID: ${r.mfg.join(', ')}`;
+    if(r.uuids.length) s += `\n  serviceUUID: ${r.uuids.join(', ')}`;
+    if(r.svc.length) s += `\n  serviceData: ${r.svc.join(', ')}`;
+    if(r.ibeacon) s += `\n  ★iBeacon UUID: ${r.ibeacon.uuid} / ${r.ibeacon.major}/${r.ibeacon.minor}`;
+    return s;
+  }).join('\n\n');
+}
+
+function stopDiag(){
+  if(!diagScan && !diagListener) return;
+  if(diagListener){ navigator.bluetooth.removeEventListener('advertisementreceived', diagListener); diagListener = null; }
+  if(diagScan){ try{ diagScan.stop(); }catch(e){ /* 停止済み */ } diagScan = null; }
+  $('btnDiag').textContent = '診断スキャン開始（生データ表示）';
+}
+
+async function toggleDiag(){
+  if(diagScan){ stopDiag(); return; }
+  if(!(window.isSecureContext && navigator.bluetooth && navigator.bluetooth.requestLEScan)){
+    alert('診断できません。\n\n' + env.warnings().join('\n\n'));
+    return;
+  }
+  if(currentSource) stopScan(); // 通常スキャンと排他
+  diagSeen.clear(); renderDiag();
+  diagListener = (e) => {
+    const mfg = [];
+    if(e.manufacturerData) for(const k of e.manufacturerData.keys()) mfg.push('0x' + k.toString(16).padStart(4,'0').toUpperCase());
+    const svc = [];
+    if(e.serviceData) for(const k of e.serviceData.keys()) svc.push(k);
+    const ib = parseIBeacon(e.manufacturerData);
+    const key = (e.device && e.device.id) || (e.device && e.device.name) || 'anon';
+    diagSeen.set(key, {
+      name: (e.device && e.device.name) ? e.device.name : '(名前なし)',
+      rssi: e.rssi, mfg, svc, uuids: e.uuids || [], ibeacon: ib
+    });
+    renderDiag();
+  };
+  navigator.bluetooth.addEventListener('advertisementreceived', diagListener);
+  try{
+    diagScan = await navigator.bluetooth.requestLEScan({ acceptAllAdvertisements:true, keepRepeatedDevices:true });
+    $('btnDiag').textContent = '診断スキャン停止';
+  }catch(err){
+    navigator.bluetooth.removeEventListener('advertisementreceived', diagListener); diagListener = null;
+    alert('診断スキャン開始に失敗：' + (err && err.message ? err.message : err) +
+      '\n\n原因候補：Bluetooth OFF／位置情報OFF／権限拒否');
+  }
+}
+
 function bind(){
   // タブ
   $('tabScan').addEventListener('click', () => ui.showTab('scan'));
@@ -90,7 +149,7 @@ function bind(){
   // スキャン操作（start はユーザー操作のコールスタック内で呼ぶ）
   const onScanClick = () => {
     if(currentSource) stopScan();
-    else startScan(getRealSource(), '受信中');
+    else { stopDiag(); startScan(getRealSource(), '受信中'); } // 診断中なら止めてから
   };
   const onMockClick = () => {
     if(currentSource) return;
@@ -103,6 +162,7 @@ function bind(){
   $('btnScanR').addEventListener('click', onScanClick);
   $('btnMockR').addEventListener('click', onMockClick);
   $('btnFit').addEventListener('click', () => mapview.fitAll(store.all()));
+  $('btnDiag').addEventListener('click', toggleDiag);
 
   // 登録操作
   $('btnSave').addEventListener('click', () => {
