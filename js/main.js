@@ -86,19 +86,28 @@ function stopScan(){
 let diagScan = null, diagListener = null;
 const diagSeen = new Map();
 
+// ハイフン/スペース/コロンを無視した小文字化（検索の正規化）
+function normSearch(s){ return String(s).toLowerCase().replace(/[\s\-:]/g, ''); }
+
 function renderDiag(){
   const el = $('diagLog');
   el.style.display = 'block';
-  const rows = [...diagSeen.values()].sort((a, b) => b.rssi - a.rssi);
-  if(!rows.length){ el.textContent = '(まだ受信なし… ビーコンを近づけてください)'; return; }
-  el.textContent = `受信 ${rows.length} 台\n--------\n` + rows.map(r => {
+  const all = [...diagSeen.values()].sort((a, b) => b.rssi - a.rssi);
+  if(!all.length){ el.textContent = '(まだ受信なし… ビーコンを近づけてください)'; return; }
+
+  const q = normSearch(($('diagFilter') && $('diagFilter').value) || '');
+  const block = (r) => {
     let s = `${r.name}  RSSI ${r.rssi}dBm`;
-    if(r.mfg.length) s += `\n  会社ID: ${r.mfg.join(', ')}`;
+    for(const m of r.mfg) s += `\n  会社ID ${m.id}: ${m.hex}`; // 生バイト列（HEX）
     if(r.uuids.length) s += `\n  serviceUUID: ${r.uuids.join(', ')}`;
     if(r.svc.length) s += `\n  serviceData: ${r.svc.join(', ')}`;
     if(r.ibeacon) s += `\n  ★iBeacon UUID: ${r.ibeacon.uuid} / ${r.ibeacon.major}/${r.ibeacon.minor}`;
     return s;
-  }).join('\n\n');
+  };
+  // 絞り込みは各機器のブロック全文（名称/HEX/UUID等）に対して正規化部分一致
+  const rows = q ? all.filter(r => normSearch(block(r)).includes(q)) : all;
+  const head = q ? `該当 ${rows.length} / 受信 ${all.length} 台（絞り込み中）` : `受信 ${all.length} 台`;
+  el.textContent = head + '\n--------\n' + (rows.length ? rows.map(block).join('\n\n') : '(該当なし。空欄にすると全件表示)');
 }
 
 function stopDiag(){
@@ -118,7 +127,11 @@ async function toggleDiag(){
   diagSeen.clear(); renderDiag();
   diagListener = (e) => {
     const mfg = [];
-    if(e.manufacturerData) for(const k of e.manufacturerData.keys()) mfg.push('0x' + k.toString(16).padStart(4,'0').toUpperCase());
+    if(e.manufacturerData) for(const [k, dv] of e.manufacturerData){
+      let hex = '';
+      for(let i = 0; i < dv.byteLength; i++) hex += (i ? ' ' : '') + dv.getUint8(i).toString(16).padStart(2,'0');
+      mfg.push({ id: '0x' + k.toString(16).padStart(4,'0').toUpperCase(), hex });
+    }
     const svc = [];
     if(e.serviceData) for(const k of e.serviceData.keys()) svc.push(k);
     const ib = parseIBeacon(e.manufacturerData);
@@ -163,6 +176,7 @@ function bind(){
   $('btnMockR').addEventListener('click', onMockClick);
   $('btnFit').addEventListener('click', () => mapview.fitAll(store.all()));
   $('btnDiag').addEventListener('click', toggleDiag);
+  $('diagFilter').addEventListener('input', () => { if(diagSeen.size) renderDiag(); }); // 入力で即絞り込み
 
   // 登録操作
   $('btnSave').addEventListener('click', () => {
