@@ -9,6 +9,7 @@ import { radar } from './radar.js';
 import { ui } from './ui.js';
 import { env } from './env.js';
 import { getRealSource, MockSource } from './sources/index.js';
+import { csvToBeacons, decodeText } from './csv.js';
 
 let currentSource = null; // 実機とデモは排他。同時稼働させない
 
@@ -24,6 +25,21 @@ function bestForMap(dets){
 function refreshLists(){
   ui.renderRegList(store.all());
   mapview.redraw(store.all(), state.active(), bestForMap(state.active()));
+}
+
+// 同梱の beacons.csv があれば読み込んで登録（CSVがマスター＝キー一致は上書き）。
+// 無ければ何もしない。文字コードは UTF-8／Shift_JIS を自動判定。
+async function loadDefaultCsv(){
+  try{
+    const res = await fetch('beacons.csv', { cache:'no-store' });
+    if(!res.ok) return; // 404 等＝存在しない → 読み込まない（設計どおり）
+    const text = decodeText(await res.arrayBuffer());
+    const { recs, skipped } = csvToBeacons(text);
+    recs.forEach(r => store.upsert(r)); // キー一致は上書き＝リロード時にCSVの名称へ戻る
+    console.info(`[csv] beacons.csv 読み込み: ${recs.length}件登録 / ${skipped}行スキップ`);
+  }catch(e){
+    console.warn('[csv] beacons.csv 読み込み失敗:', e);
+  }
 }
 
 function tick(){
@@ -133,12 +149,29 @@ function bind(){
     e.target.value = ''; // 同じファイルを連続選択できるように
   });
 
+  // 手動CSV読み込み（端末内のCSVをその場で取り込む。文字コード自動判定）
+  $('btnImportCsv').addEventListener('click', () => $('fileImportCsv').click());
+  $('fileImportCsv').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const { recs, skipped } = csvToBeacons(decodeText(reader.result));
+      recs.forEach(r => store.upsert(r));
+      refreshLists();
+      alert(`${recs.length}件を読み込みました。${skipped ? `（${skipped}行はヘッダ／不正でスキップ）` : ''}`);
+    };
+    reader.onerror = () => alert('ファイルの読み込みに失敗しました。');
+    reader.readAsArrayBuffer(file); // 文字コード判定のため ArrayBuffer で読む
+    e.target.value = '';
+  });
+
   // 画面離脱時はスキャンを止める（設計 6-4）
   window.addEventListener('pagehide', () => { if(currentSource) currentSource.stop(); });
 }
 
 /* --- 初期化 --- */
-function boot(){
+async function boot(){
   store.load();
   mapview.init('map');
   bind();
@@ -156,6 +189,9 @@ function boot(){
     note.innerHTML = '<b>環境メモ</b><ul>' + w.map(t => `<li>${esc(t)}</li>`).join('') + '</ul>';
   }
 
+  refreshLists();               // まず localStorage の分を即表示
+  mapview.fitAll(store.all());
+  await loadDefaultCsv();        // beacons.csv があればCSVをマスターとして反映
   refreshLists();
   mapview.fitAll(store.all());
   setInterval(tick, RENDER_TICK_MS);

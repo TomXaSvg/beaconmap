@@ -72,11 +72,12 @@ export function normalizeBeacon(o){
   if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(uuid)) return null;
   if(!Number.isInteger(major) || major < 0 || major > 65535) return null;
   if(!Number.isInteger(minor) || minor < 0 || minor > 65535) return null;
-  // 緯度経度は任意（レーダー専用なら座標なしで可）。片方でも欠けたら座標なし扱い
+  // 緯度経度は任意（レーダー専用なら座標なしで可）。両方空＝座標なし、片方だけ＝不正
   const hasLat = o.lat !== null && o.lat !== undefined && o.lat !== '';
   const hasLng = o.lng !== null && o.lng !== undefined && o.lng !== '';
   let lat = null, lng = null;
   if(hasLat || hasLng){
+    if(!hasLat || !hasLng) return null; // 片方だけは不正（空欄で0扱いになる事故を防ぐ）
     lat = Number(o.lat); lng = Number(o.lng);
     if(!Number.isFinite(lat) || lat < -90 || lat > 90) return null;
     if(!Number.isFinite(lng) || lng < -180 || lng > 180) return null;
