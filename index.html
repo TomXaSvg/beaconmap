@@ -103,7 +103,12 @@
     <div class="row">
       <button id="btnExport" class="btn ghost">JSON書き出し</button>
       <button id="btnImport" class="btn ghost">JSON読み込み</button>
+      <button id="btnImportCsv" class="btn ghost">CSV読み込み</button>
       <input id="fileImport" type="file" accept="application/json,.json" hidden>
+      <input id="fileImportCsv" type="file" accept=".csv,text/csv" hidden>
+    </div>
+    <div class="radar-note" style="text-align:left; margin:-2px 0 8px">
+      ※ サーバー上に <code>beacons.csv</code> があれば起動時に自動登録（列：名称,UUID,Major,Minor,lat,lng／後2つ任意）。CSVがマスターのため、リロードでCSVの名称に戻る。
     </div>
 
     <h2 class="sec">登録済みビーコン</h2>
