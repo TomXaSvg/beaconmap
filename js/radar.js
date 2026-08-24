@@ -42,8 +42,9 @@ export const radar = (() => {
     // 十字＋中心（あなた）
     s += `<line x1="${CX}" y1="${CY-R}" x2="${CX}" y2="${CY+R}" stroke="#2c3444" stroke-width="0.4"/>`;
     s += `<line x1="${CX-R}" y1="${CY}" x2="${CX+R}" y2="${CY}" stroke="#2c3444" stroke-width="0.4"/>`;
+    // 中心＝自分。十字の交点で自明なのでラベルは置かず、点のみ（原点が分かる程度に外周リングを添える）
+    s += `<circle cx="${CX}" cy="${CY}" r="6" fill="none" stroke="${COLOR.accent}" stroke-width="0.8" stroke-opacity="0.5"/>`;
     s += `<circle cx="${CX}" cy="${CY}" r="3" fill="${COLOR.accent}"/>`;
-    s += `<text x="${CX}" y="${CY+12}" fill="#9aa6b8" font-size="5.5" text-anchor="middle">あなた</text>`;
 
     // 光点
     blips.forEach((bl, idx) => {
