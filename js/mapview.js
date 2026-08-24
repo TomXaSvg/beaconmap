@@ -7,7 +7,7 @@ import { estimateDistance } from './ibeacon.js';
 
 /* global L */
 export const mapview = (() => {
-  let map = null, layer = null, meLayer = null, pickHandler = null, lastFix = null;
+  let map = null, layer = null, meLayer = null, pickHandler = null, lastFix = null, watchId = null;
 
   function init(elId){
     map = L.map(elId, { zoomControl:true }).setView(MAP_CENTER, MAP_ZOOM);
@@ -48,6 +48,20 @@ export const mapview = (() => {
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
       );
     });
+  }
+
+  // 捜索中はGPSを連続取得して現在地マーカーとlastFixを更新（地図は勝手に動かさない）。
+  // これで「現在地中心の円」が歩行に追従し、近づくほど円が小さくなる。
+  function startWatch(){
+    if(!navigator.geolocation || watchId != null) return;
+    watchId = navigator.geolocation.watchPosition(
+      (pos) => showMyLocation(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy, false),
+      () => {},
+      { enableHighAccuracy: true, maximumAge: 2000, timeout: 15000 }
+    );
+  }
+  function stopWatch(){
+    if(watchId != null){ navigator.geolocation.clearWatch(watchId); watchId = null; }
   }
 
   // 地図右上に「現在地」ボタン（カーナビの現在地ボタン相当。押すたび読み直し）
@@ -104,6 +118,21 @@ export const mapview = (() => {
       }).bindPopup(html).addTo(layer);
     });
 
+    // 座標なしビーコンを「現在地から推定距離の円」で表示（受信中＋GPSがある時のみ）。
+    // 円のどこかにビーコンがある＝ドラゴンレーダー的な当たり付け。歩いて再測ると円が絞れる。
+    if(lastFix){
+      beacons.forEach(b => {
+        if(hasCoords(b)) return;         // 座標ありは上で地図ピン済み
+        const det = detByKey.get(b.key);
+        if(!det) return;                 // 受信中のみ
+        const dist = estimateDistance(det.rssi, det.txPower);
+        L.circle([lastFix.lat, lastFix.lng], {
+          radius: dist, color: COLOR.warn, weight: 1.5, dashArray: '5,5',
+          fillColor: COLOR.warn, fillOpacity: 0.06
+        }).bindPopup(`<b>${esc(b.name)}</b><br>現在地から約 ${esc(dist.toFixed(1))} m の円内`).addTo(layer);
+      });
+    }
+
     // 推定現在地リング
     if(best){
       L.circleMarker([best.beacon.lat, best.beacon.lng], {
@@ -130,5 +159,5 @@ export const mapview = (() => {
     map.on('click', pickHandler);
   }
 
-  return { init, redraw, fitAll, focus, onPick, locate, showMyLocation };
+  return { init, redraw, fitAll, focus, onPick, locate, showMyLocation, startWatch, stopWatch };
 })();

@@ -63,6 +63,7 @@ async function startScan(source, label){
     currentSource = source;
     await source.start(state.onEvent);
     ui.setScanUI(true, label);
+    mapview.startWatch(); // 捜索中は現在地を追従（座標なしビーコンの「現在地中心の円」用）
   }catch(e){
     // BT OFF / 権限拒否 / http 等（設計 8節 #4）
     currentSource = null;
@@ -74,6 +75,7 @@ async function startScan(source, label){
 
 function stopScan(){
   if(currentSource){ currentSource.stop(); currentSource = null; }
+  mapview.stopWatch();
   state.clear();
   ui.setScanUI(false);
   tick();
