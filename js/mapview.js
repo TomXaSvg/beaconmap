@@ -115,7 +115,9 @@ export const mapview = (() => {
         `RSSI: ${esc(rssi)}<br>推定距離: ${esc(dist)}`;
       L.circleMarker([b.lat, b.lng], {
         radius:7, color, weight:2, fillColor:color, fillOpacity:1
-      }).bindPopup(html).addTo(layer);
+      }).bindPopup(html)
+        .bindTooltip(esc(b.name), { permanent:true, direction:'top', className:'beacon-label', offset:[0,-6] })
+        .addTo(layer);
     });
 
     // 座標なしビーコンを「現在地から推定距離の円」で表示（受信中＋GPSがある時のみ）。
@@ -126,10 +128,17 @@ export const mapview = (() => {
         const det = detByKey.get(b.key);
         if(!det) return;                 // 受信中のみ
         const dist = estimateDistance(det.rssi, det.txPower);
-        L.circle([lastFix.lat, lastFix.lng], {
+        const c = L.circle([lastFix.lat, lastFix.lng], {
           radius: dist, color: COLOR.warn, weight: 1.5, dashArray: '5,5',
           fillColor: COLOR.warn, fillOpacity: 0.06
         }).bindPopup(`<b>${esc(b.name)}</b><br>現在地から約 ${esc(dist.toFixed(1))} m の円内`).addTo(layer);
+        // 円の上端に名称ラベル（方向は不明なので位置は便宜上・上端に固定）
+        const topLat = c.getBounds().getNorth();
+        layer.addLayer(
+          L.tooltip({ permanent:true, direction:'top', className:'beacon-label' })
+            .setLatLng([topLat, lastFix.lng])
+            .setContent(`${esc(b.name)}（約${esc(dist.toFixed(0))}m）`)
+        );
       });
     }
 
