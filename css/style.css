@@ -1,0 +1,125 @@
+/* ===== デザイントークン（色）===== 設計 3節の色トークン */
+:root{
+  --bg:#12151c; --panel:#1a1f2a; --panel2:#222836; --line:#2c3444;
+  --text:#e7ecf3; --muted:#9aa6b8;
+  --ok:#35c98a;     /* 受信中 */
+  --accent:#3ea6ff; /* 推定現在地・主ボタン */
+  --warn:#f5a524;   /* デモ・未登録・警告 */
+  --bad:#ff5c5c;    /* 停止 */
+  --idle:#4a5160;   /* 登録済みだが未受信 */
+  --radius:10px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{
+  background:var(--bg); color:var(--text);
+  font-family:"Meiryo UI","Segoe UI",system-ui,sans-serif;
+  font-size:14px; line-height:1.5;
+  display:flex; flex-direction:column; height:100dvh; overflow:hidden;
+}
+
+/* ===== ヘッダー ===== */
+header{
+  display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+  padding:8px 12px; background:var(--panel); border-bottom:1px solid var(--line);
+}
+header h1{font-size:15px; margin:0; margin-right:auto; font-weight:700}
+.badge{
+  font-size:11px; padding:3px 8px; border-radius:999px;
+  border:1px solid var(--line); background:var(--panel2); color:var(--muted); white-space:nowrap;
+}
+.badge.ok{color:#0c1a12; background:var(--ok); border-color:var(--ok)}
+.badge.warn{color:#241a04; background:var(--warn); border-color:var(--warn)}
+.badge.bad{color:#2a0d0d; background:var(--bad); border-color:var(--bad)}
+
+/* ===== 地図 ===== */
+#mapWrap{position:relative; height:42dvh; min-height:220px; flex:0 0 auto}
+#map{width:100%; height:100%; background:#0c0e13}
+/* 推定現在地パネル（地図上にオーバーレイ）*/
+#hint{
+  position:absolute; left:8px; bottom:8px; z-index:500; display:none;
+  background:rgba(26,31,42,.92); border:1px solid var(--accent); border-radius:var(--radius);
+  padding:8px 12px; max-width:70%; backdrop-filter:blur(4px);
+}
+#hint.show{display:block}
+#hintName{font-weight:700; color:var(--accent)}
+#hintSub{font-size:12px; color:var(--muted)}
+
+/* ===== タブ ===== */
+nav{display:flex; background:var(--panel); border-bottom:1px solid var(--line)}
+nav button{
+  flex:1; padding:10px; background:none; border:none; color:var(--muted);
+  font:inherit; cursor:pointer; border-bottom:2px solid transparent;
+}
+nav button.active{color:var(--text); border-bottom-color:var(--accent)}
+
+main{flex:1 1 auto; overflow:auto; padding:12px; -webkit-overflow-scrolling:touch}
+.pane{display:none}
+.pane.active{display:block}
+
+/* ===== 操作ボタン ===== */
+.row{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px}
+button.btn{
+  padding:9px 14px; border-radius:var(--radius); border:1px solid var(--line);
+  background:var(--panel2); color:var(--text); font:inherit; cursor:pointer;
+}
+button.btn:hover{border-color:var(--accent)}
+button.btn.primary{background:var(--accent); border-color:var(--accent); color:#04121f; font-weight:700}
+button.btn.warn{background:var(--warn); border-color:var(--warn); color:#241a04; font-weight:700}
+button.btn.bad{background:var(--bad); border-color:var(--bad); color:#2a0d0d; font-weight:700}
+button.btn.ghost{background:none}
+button.btn:disabled{opacity:.4; cursor:not-allowed}
+
+/* ===== 環境警告 ===== */
+#envNote{
+  background:var(--panel); border:1px solid var(--warn); border-left-width:4px;
+  border-radius:var(--radius); padding:8px 12px; margin-bottom:12px; font-size:12.5px; color:var(--muted);
+}
+#envNote ul{margin:6px 0 0; padding-left:18px}
+#envNote li{margin:2px 0}
+#envNote.hidden{display:none}
+
+/* ===== リスト ===== */
+.list{display:flex; flex-direction:column; gap:8px}
+.card{
+  background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+  padding:10px 12px;
+}
+.card .top{display:flex; align-items:center; gap:8px}
+.dot{width:10px; height:10px; border-radius:50%; flex:0 0 auto}
+.card .name{font-weight:700}
+.card .sub{font-size:12px; color:var(--muted); margin-top:2px; word-break:break-all}
+.card .actions{display:flex; gap:6px; margin-top:8px; flex-wrap:wrap}
+.card .actions button{font-size:12px; padding:5px 10px}
+.tag{font-size:10.5px; padding:2px 6px; border-radius:6px; background:var(--panel2); color:var(--muted)}
+.tag.warn{background:var(--warn); color:#241a04}
+/* 電波強度バー */
+.bar{height:6px; border-radius:3px; background:var(--panel2); margin-top:8px; overflow:hidden}
+.bar > i{display:block; height:100%; background:var(--ok); width:0}
+.empty{color:var(--muted); text-align:center; padding:24px 0}
+
+/* ===== フォーム ===== */
+.field{margin-bottom:10px}
+.field label{display:block; font-size:12px; color:var(--muted); margin-bottom:4px}
+.field input{
+  width:100%; padding:9px 10px; border-radius:var(--radius);
+  border:1px solid var(--line); background:var(--panel); color:var(--text); font:inherit;
+}
+.field input:focus{outline:none; border-color:var(--accent)}
+.grid2{display:grid; grid-template-columns:1fr 1fr; gap:8px}
+h2.sec{font-size:13px; color:var(--muted); margin:18px 0 8px; font-weight:600}
+
+/* Leaflet のポップアップを暗色に馴染ませる */
+.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:var(--panel2); color:var(--text)}
+.leaflet-popup-content{font-family:inherit; font-size:12.5px}
+
+/* ===== レーダー ===== */
+#radarWrap{position:relative; width:min(88vw,340px); aspect-ratio:1; margin:6px auto 14px}
+#radarSweep{
+  position:absolute; inset:5%; border-radius:50%;
+  background:conic-gradient(from 0deg, rgba(62,166,255,.28), rgba(62,166,255,0) 70deg);
+  animation:sweep 3.2s linear infinite; pointer-events:none;
+}
+@keyframes sweep{to{transform:rotate(360deg)}}
+#radarSvg{position:absolute; inset:0; width:100%; height:100%; display:block}
+.radar-note{text-align:center; color:var(--muted); font-size:12px; margin:-4px 0 10px}
