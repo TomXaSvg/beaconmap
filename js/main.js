@@ -175,7 +175,13 @@ function bind(){
   $('btnMock').addEventListener('click', onMockClick);
   $('btnScanR').addEventListener('click', onScanClick);
   $('btnMockR').addEventListener('click', onMockClick);
-  $('btnFit').addEventListener('click', () => mapview.fitAll(store.all()));
+  $('btnFit').addEventListener('click', () => {
+    if(!store.all().some(hasCoords)){
+      alert('座標付きの登録ビーコンがありません。\n地図に表示するには「ビーコン登録」で緯度経度を入力してください。\n（レーダーで探すだけなら座標は不要です）');
+      return;
+    }
+    mapview.fitAll(store.all());
+  });
   $('btnDiag').addEventListener('click', toggleDiag);
   $('diagFilter').addEventListener('input', () => { if(diagSeen.size) renderDiag(); }); // 入力で即絞り込み
 
