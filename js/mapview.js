@@ -51,15 +51,30 @@ export const mapview = (() => {
     if(recenter) map.setView([lat, lng], Math.max(map.getZoom(), 17));
   }
 
-  // 現在地を取得して表示。成功で {lat,lng}、失敗で null（呼び出し側でメッセージ）
-  function locate(recenter){
+  // 位置情報の取得元。ネイティブ(Capacitor)ではプラグイン、WebではブラウザのGeolocation。
+  // ネイティブのWebViewは navigator.geolocation が権限で失敗しやすいため分岐する。
+  function capGeo(){
+    return window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Geolocation;
+  }
+  function applyPos(pos, recenter){
+    showMyLocation(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy, recenter);
+  }
+
+  // 現在地を1回取得して表示。成功で {lat,lng}、失敗で null（呼び出し側でメッセージ）
+  async function locate(recenter){
+    const G = capGeo();
+    if(G){
+      try{
+        try{ await G.requestPermissions(); }catch(e){ /* 既に許可済み等 */ }
+        const pos = await G.getCurrentPosition({ enableHighAccuracy: true, timeout: 10000 });
+        applyPos(pos, recenter);
+        return { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      }catch(e){ return null; }
+    }
     return new Promise((resolve) => {
       if(!navigator.geolocation){ resolve(null); return; }
       navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          showMyLocation(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy, recenter);
-          resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-        },
+        (pos) => { applyPos(pos, recenter); resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }); },
         () => resolve(null),
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
       );
@@ -68,16 +83,29 @@ export const mapview = (() => {
 
   // 捜索中はGPSを連続取得して現在地マーカーとlastFixを更新（地図は勝手に動かさない）。
   // これで「現在地中心の円」が歩行に追従し、近づくほど円が小さくなる。
-  function startWatch(){
-    if(!navigator.geolocation || watchId != null) return;
+  async function startWatch(){
+    if(watchId != null) return;
+    const G = capGeo();
+    if(G){
+      try{ await G.requestPermissions(); }catch(e){}
+      try{
+        watchId = await G.watchPosition({ enableHighAccuracy: true, timeout: 15000 }, (pos) => { if(pos) applyPos(pos, false); });
+      }catch(e){ watchId = null; }
+      return;
+    }
+    if(!navigator.geolocation) return;
     watchId = navigator.geolocation.watchPosition(
-      (pos) => showMyLocation(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy, false),
+      (pos) => applyPos(pos, false),
       () => {},
       { enableHighAccuracy: true, maximumAge: 2000, timeout: 15000 }
     );
   }
   function stopWatch(){
-    if(watchId != null){ navigator.geolocation.clearWatch(watchId); watchId = null; }
+    if(watchId == null) return;
+    const G = capGeo();
+    if(G){ try{ G.clearWatch({ id: watchId }); }catch(e){} }
+    else { try{ navigator.geolocation.clearWatch(watchId); }catch(e){} }
+    watchId = null;
   }
 
   // 地図右上に「現在地」ボタン（カーナビの現在地ボタン相当。押すたび読み直し）
@@ -94,7 +122,7 @@ export const mapview = (() => {
           btn.disabled = true;
           const fix = await locate(true);
           btn.disabled = false;
-          if(!fix) alert('現在地を取得できませんでした。\n・位置情報サービスがON\n・Chromeアプリに「位置情報」権限が許可されているか\nを確認してください。');
+          if(!fix) alert('現在地を取得できませんでした。\n・位置情報（GPS）をON\n・このアプリに「位置情報」の権限を許可\nを確認してください。');
         });
         return btn;
       }
